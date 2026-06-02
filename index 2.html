@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Darshana Ayurveda</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Poppins,sans-serif}
+body{background:#f4f7ff;color:#1e293b}
+.app{display:flex;min-height:100vh}
+.sidebar{width:250px;background:linear-gradient(180deg,#0b57ff,#0044d4);padding:20px;color:#fff}
+.logo{font-size:28px;font-weight:700;margin-bottom:25px}
+.nav{padding:14px;border-radius:14px;background:rgba(255,255,255,.08);margin-bottom:10px;cursor:pointer}
+.nav.active,.nav:hover{background:#fff;color:#0b57ff}
+.main{flex:1;padding:20px}
+.section{display:none}
+.section.active{display:block}
+.panel,.card{background:#fff;padding:20px;border-radius:22px;box-shadow:0 8px 20px rgba(0,0,0,.05);margin-bottom:20px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+input,button{width:100%;padding:14px;border-radius:14px;border:1px solid #dbe5ff;margin-top:10px}
+button{border:none;background:#0b57ff;color:#fff;font-weight:600;cursor:pointer}
+.toggle,.tabs{display:flex;gap:10px;flex-wrap:wrap;margin:15px 0}
+.toggle button,.tab,.small-btn{padding:10px 16px;border-radius:12px;background:#edf2ff;color:#1e293b;border:none;cursor:pointer;width:auto}
+.toggle button.active,.tab.active{background:#0b57ff;color:#fff}
+.list,.search-results{background:#f8fbff;padding:12px;border-radius:14px;margin-top:10px}
+.item{padding:10px;border-bottom:1px solid #e5e7eb;cursor:pointer}
+table{width:100%;border-collapse:collapse;margin-top:15px}
+th,td{border:1px solid #eef2ff;padding:10px;text-align:left}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.edit{background:#f59e0b}
+.delete{background:#ef4444}
+.green{background:#10b981}
+.total-box{background:#ecfdf5;padding:16px;border-radius:16px;margin-top:20px}
+@media(max-width:900px){.app{flex-direction:column}.sidebar{width:100%}.grid,.row{grid-template-columns:1fr}}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<div class="sidebar">
+<div class="logo">Darshana Ayurveda</div>
+
+<div class="nav active" onclick="showSection('dashboard',this)">Dashboard</div>
+<div class="nav" onclick="showSection('create',this)">Create Order</div>
+<div class="nav" onclick="showSection('orders',this)">Orders</div>
+<div class="nav" onclick="showSection('suppliers',this)">Suppliers</div>
+<div class="nav" onclick="showSection('medicines',this)">Medicines</div>
+</div>
+
+<div class="main">
+
+<div id="dashboard" class="section active">
+<div class="panel">
+<h2>Darshana Ayurveda Procurement System</h2>
+<p>Stable Production Build</p>
+</div>
+</div>
+
+<div id="suppliers" class="section">
+<div class="grid">
+
+<div class="panel">
+<h2>Add Supplier</h2>
+<input id="supName" placeholder="Supplier Name">
+<input id="supRep" placeholder="Representative">
+<input id="supPhone" placeholder="Contact">
+<input id="supDiscount" type="number" placeholder="Default Discount %">
+<button onclick="addSupplier()">Save Supplier</button>
+</div>
+
+<div class="panel">
+<h2>Supplier List</h2>
+<div id="supplierList"></div>
+</div>
+
+</div>
+</div>
+
+<div id="medicines" class="section">
+<div class="grid">
+
+<div class="panel">
+<h2>Add Medicine</h2>
+
+<div class="tabs">
+<div class="tab active" onclick="selectType(this,'Kashaya')">Kashaya</div>
+<div class="tab" onclick="selectType(this,'Guli/Tablets')">Guli/Tablets</div>
+<div class="tab" onclick="selectType(this,'Kalka')">Kalka</div>
+<div class="tab" onclick="selectType(this,'Churna')">Churna</div>
+<div class="tab" onclick="selectType(this,'Oils')">Oils</div>
+</div>
+
+<input id="medName" placeholder="Medicine Name">
+<div id="priceFields"></div>
+
+<button onclick="saveMedicine()">Save Medicine</button>
+</div>
+
+<div class="panel">
+<h2>Medicine Library</h2>
+<div id="medicineList"></div>
+</div>
+
+</div>
+</div>
+
+<div id="create" class="section">
+<div class="grid">
+
+<div class="panel">
+<h2>Create Order</h2>
+
+<input id="supplierSearch" placeholder="Search Supplier..." oninput="searchSupplier()">
+<div id="supplierResults" class="search-results"></div>
+<div id="selectedSupplierBox" class="list">No supplier selected</div>
+
+<div class="tabs">
+<div class="tab active" onclick="switchCategory(this,'Kashaya')">Kashaya</div>
+<div class="tab" onclick="switchCategory(this,'Guli/Tablets')">Guli</div>
+<div class="tab" onclick="switchCategory(this,'Kalka')">Kalka</div>
+<div class="tab" onclick="switchCategory(this,'Churna')">Churna</div>
+<div class="tab" onclick="switchCategory(this,'Oils')">Oils</div>
+</div>
+
+<input id="medicineSearch" placeholder="Search Medicine..." oninput="searchMedicine()">
+<div id="medicineResults" class="search-results"></div>
+<div id="selectedMedicineBox" class="list">No medicine selected</div>
+
+<div id="quantityButtons"></div>
+
+<button onclick="addToOrder()">Add To Order</button>
+</div>
+
+<div class="panel">
+<h2>Current Order</h2>
+
+<table>
+<thead>
+<tr>
+<th>No</th>
+<th>Medicine</th>
+<th>Quantity</th>
+</tr>
+</thead>
+<tbody id="cartTable"></tbody>
+</table>
+
+<button class="green" onclick="saveOrder()">Save Order</button>
+
+</div>
+
+</div>
+</div>
+
+<div id="orders" class="section">
+<h2 style="margin-bottom:15px">Orders Library</h2>
+<div id="ordersList"></div>
+</div>
+
+</div>
+</div>
+
+<script>
+
+let suppliers=JSON.parse(localStorage.getItem('suppliers')||'[]');
+let medicines=JSON.parse(localStorage.getItem('medicines')||'[]');
+let orders=JSON.parse(localStorage.getItem('orders')||'[]');
+
+let medicineType='Kashaya';
+let currentCategory='Kashaya';
+let selectedSupplier=null;
+let selectedMedicine=null;
+let selectedQty='250g';
+let cart=[];
+
+function persist(){
+localStorage.setItem('suppliers',JSON.stringify(suppliers));
+localStorage.setItem('medicines',JSON.stringify(medicines));
+localStorage.setItem('orders',JSON.stringify(orders));
+}
+
+function showSection(id,el){
+document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+document.getElementById(id).classList.add('active');
+
+if(el){
+document.querySelectorAll('.nav').forEach(n=>n.classList.remove('active'));
+el.classList.add('active');
+}
+}
+
+function addSupplier(){
+if(!supName.value.trim()) return alert('Enter supplier');
+
+suppliers.push({
+name:supName.value,
+rep:supRep.value,
+phone:supPhone.value,
+discount:Number(supDiscount.value||0)
+});
+
+persist();
+renderSuppliers();
+
+supName.value='';
+supRep.value='';
+supPhone.value='';
+supDiscount.value='';
+}
+
+function renderSuppliers(){
+supplierList.innerHTML='';
+
+suppliers.forEach((s,index)=>{
+supplierList.innerHTML += `
+<div class='list'>
+<b>${s.name}</b><br>
+${s.rep}<br>
+${s.phone}<br>
+Discount ${s.discount}%
+
+<div class='row'>
+<button class='small-btn edit' onclick='editSupplier(${index})'>Edit</button>
+<button class='small-btn delete' onclick='deleteSupplier(${index})'>Delete</button>
+</div>
+</div>`;
+});
+}
+
+function editSupplier(index){
+let s=suppliers[index];
+
+supName.value=s.name;
+supRep.value=s.rep;
+supPhone.value=s.phone;
+supDiscount.value=s.discount;
+
+suppliers.splice(index,1);
+
+persist();
+renderSuppliers();
+}
+
+function deleteSupplier(index){
+if(confirm('Delete Supplier?')){
+suppliers.splice(index,1);
+persist();
+renderSuppliers();
+}
+}
+
+function selectType(el,type){
+medicineType=type;
+
+document.querySelectorAll('#medicines .tab').forEach(t=>t.classList.remove('active'));
+el.classList.add('active');
+
+renderPriceFields();
+}
+
+function renderPriceFields(){
+
+if(['Kashaya','Kalka','Churna'].includes(medicineType)){
+
+priceFields.innerHTML=`
+<input id="p250" type="number" placeholder="250g Price">
+<input id="p500" type="number" placeholder="500g Price">
+<input id="p1kg" type="number" placeholder="1Kg Price">
+`;
+
+}
+else if(medicineType==='Guli/Tablets'){
+
+priceFields.innerHTML=`
+<input id="p60" type="number" placeholder="60 Qty Price">
+<input id="p250qty" type="number" placeholder="250 Qty Price">
+<input id="p750qty" type="number" placeholder="750 Qty Price">
+`;
+
+}
+else{
+
+priceFields.innerHTML=`
+<input id="p100" type="number" placeholder="100ml Price">
+<input id="p200" type="number" placeholder="200ml Price">
+<input id="p500ml" type="number" placeholder="500ml Price">
+<input id="p750ml" type="number" placeholder="750ml Price">
+<input id="p1l" type="number" placeholder="1L Price">
+`;
+
+}
+}
+
+function saveMedicine(){
+
+if(!medName.value.trim()) return alert('Enter medicine');
+
+let prices={};
+
+if(['Kashaya','Kalka','Churna'].includes(medicineType)){
+
+prices={
+'250g':Number(p250.value||0),
+'500g':Number(p500.value||0),
+'1Kg':Number(p1kg.value||0)
+};
+
+}
+else if(medicineType==='Guli/Tablets'){
+
+prices={
+'60 Qty':Number(p60.value||0),
+'250 Qty':Number(p250qty.value||0),
+'750 Qty':Number(p750qty.value||0)
+};
+
+}
+else{
+
+prices={
+'100ml':Number(p100.value||0),
+'200ml':Number(p200.value||0),
+'500ml':Number(p500ml.value||0),
+'750ml':Number(p750ml.value||0),
+'1L':Number(p1l.value||0)
+};
+
+}
+
+medicines.push({
+name:medName.value,
+type:medicineType,
+prices
+});
+
+persist();
+renderMedicines();
+
+medName.value='';
+}
+
+function renderMedicines(){
+medicineList.innerHTML='';
+
+medicines.forEach((m,index)=>{
+medicineList.innerHTML += `
+<div class='list'>
+<b>${m.name}</b><br>
+${m.type}
+
+<div class='row'>
+<button class='small-btn edit' onclick='editMedicine(${index})'>Edit</button>
+<button class='small-btn delete' onclick='deleteMedicine(${index})'>Delete</button>
+</div>
+</div>`;
+});
+}
+
+function editMedicine(index){
+let m=medicines[index];
+
+medName.value=m.name;
+
+medicines.splice(index,1);
+
+persist();
+renderMedicines();
+}
+
+function deleteMedicine(index){
+if(confirm('Delete Medicine?')){
+medicines.splice(index,1);
+persist();
+renderMedicines();
+}
+}
+
+function searchSupplier(){
+const q=supplierSearch.value.toLowerCase();
+
+supplierResults.innerHTML='';
+
+suppliers.filter(s=>s.name.toLowerCase().includes(q)).forEach(s=>{
+supplierResults.innerHTML += `
+<div class='item' onclick='pickSupplier("${s.name}")'>
+${s.name}
+</div>`;
+});
+}
+
+function pickSupplier(name){
+
+selectedSupplier=suppliers.find(s=>s.name===name);
+
+document.getElementById('selectedSupplierBox').innerHTML=`
+<b>${selectedSupplier.name}</b><br>
+Discount ${selectedSupplier.discount}%
+`;
+}
+
+function switchCategory(el,type){
+
+currentCategory=type;
+
+document.querySelectorAll('#create .tab').forEach(t=>t.classList.remove('active'));
+el.classList.add('active');
+
+renderQtyButtons();
+}
+
+function renderQtyButtons(){
+
+let arr=[];
+
+if(['Kashaya','Kalka','Churna'].includes(currentCategory)){
+arr=['250g','500g','1Kg'];
+}
+else if(currentCategory==='Guli/Tablets'){
+arr=['60 Qty','250 Qty','750 Qty'];
+}
+else{
+arr=['100ml','200ml','500ml','750ml','1L'];
+}
+
+quantityButtons.innerHTML=`
+<div class='toggle'>
+${arr.map((q,i)=>`
+<button class='${i===0?'active':''}' type='button' onclick="setQty(this,'${q}')">${q}</button>
+`).join('')}
+</div>`;
+
+selectedQty=arr[0];
+}
+
+function setQty(el,q){
+selectedQty=q;
+
+el.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+el.classList.add('active');
+}
+
+function searchMedicine(){
+
+const q=medicineSearch.value.toLowerCase();
+
+medicineResults.innerHTML='';
+
+medicines.filter(m=>m.type===currentCategory && m.name.toLowerCase().includes(q)).forEach(m=>{
+medicineResults.innerHTML += `
+<div class='item' onclick='pickMedicine("${m.name}")'>
+${m.name}
+</div>`;
+});
+}
+
+function pickMedicine(name){
+
+selectedMedicine=medicines.find(m=>m.name===name);
+
+document.getElementById('selectedMedicineBox').innerHTML=`
+<b>${selectedMedicine.name}</b><br>
+${selectedMedicine.type}
+`;
+}
+
+function addToOrder(){
+
+if(!selectedSupplier) return alert('Select supplier');
+if(!selectedMedicine) return alert('Select medicine');
+
+cart.push({
+medicine:selectedMedicine.name,
+quantity:selectedQty
+});
+
+renderCart();
+}
+
+function renderCart(){
+cartTable.innerHTML='';
+
+cart.forEach((c,i)=>{
+cartTable.innerHTML += `
+<tr>
+<td>${i+1}</td>
+<td>${c.medicine}</td>
+<td>${c.quantity}</td>
+</tr>`;
+});
+}
+
+function saveOrder(){
+
+if(!selectedSupplier){
+alert('Select supplier first');
+return;
+}
+
+if(cart.length===0){
+alert('Add medicines');
+return;
+}
+
+let liveOrders=JSON.parse(localStorage.getItem('orders') || '[]');
+
+const newOrder={
+id:Date.now(),
+supplier:selectedSupplier,
+items:[...cart],
+paymentType:'Credit',
+paymentStatus:'Pending'
+};
+
+liveOrders.push(newOrder);
+
+localStorage.setItem('orders',JSON.stringify(liveOrders));
+
+orders=liveOrders;
+
+cart=[];
+
+renderCart();
+
+renderOrders();
+
+document.getElementById('selectedMedicineBox').innerHTML='No medicine selected';
+
+alert('Order Saved Successfully');
+
+showSection('orders');
+
+}
+
+function calculateTotal(order){
+
+let subtotal=0;
+
+order.items.forEach(i=>{
+
+let med=medicines.find(m=>m.name===i.medicine);
+
+if(med && med.prices[i.quantity]){
+subtotal += Number(med.prices[i.quantity]);
+}
+
+});
+
+return subtotal-(subtotal*(order.supplier.discount||0)/100);
+}
+
+function renderOrders(){
+
+ordersList.innerHTML='';
+
+let liveOrders=JSON.parse(localStorage.getItem('orders') || '[]');
+
+liveOrders.slice().reverse().forEach((o,index)=>{
+
+let total=calculateTotal(o);
+
+ordersList.innerHTML += `
+<div class='card'>
+
+<h3>${o.supplier.name}</h3>
+
+<table>
+<thead>
+<tr>
+<th>No</th>
+<th>Medicine</th>
+<th>Quantity</th>
+</tr>
+</thead>
+
+<tbody>
+${o.items.map((i,n)=>`
+<tr>
+<td>${n+1}</td>
+<td>${i.medicine}</td>
+<td>${i.quantity}</td>
+</tr>
+`).join('')}
+</tbody>
+
+</table>
+
+<div class='total-box'>
+<b>Calculated Price: Rs. ${total}</b><br>
+Discount Applied: ${o.supplier.discount}%
+</div>
+
+<p style='margin-top:15px'>Payment Option</p>
+
+<div class='toggle'>
+<button class='${o.paymentType==="Cash"?"active":""}' onclick='setPayment(${o.id},"Cash")'>Cash</button>
+<button class='${o.paymentType==="Credit"?"active":""}' onclick='setPayment(${o.id},"Credit")'>Credit</button>
+</div>
+
+<p>Status</p>
+
+<div class='toggle'>
+<button class='${o.paymentStatus==="Paid"?"active":""}' onclick='setStatus(${o.id},"Paid")'>Paid</button>
+<button class='${o.paymentStatus==="Pending"?"active":""}' onclick='setStatus(${o.id},"Pending")'>Pending</button>
+</div>
+
+<div class='row'>
+<button onclick='shareWhatsapp(${o.id})'>WhatsApp</button>
+<button class='green' onclick='generatePDF(${o.id})'>Generate PDF</button>
+</div>
+
+<div class='row'>
+<button class='small-btn edit' onclick='editOrder(${o.id})'>Edit</button>
+<button class='small-btn delete' onclick='deleteOrder(${o.id})'>Delete</button>
+</div>
+
+</div>`;
+});
+}
+
+function setPayment(id,val){
+
+let liveOrders=JSON.parse(localStorage.getItem('orders') || '[]');
+
+let o=liveOrders.find(x=>x.id===id);
+
+o.paymentType=val;
+
+localStorage.setItem('orders',JSON.stringify(liveOrders));
+
+renderOrders();
+}
+
+function setStatus(id,val){
+
+let liveOrders=JSON.parse(localStorage.getItem('orders') || '[]');
+
+let o=liveOrders.find(x=>x.id===id);
+
+o.paymentStatus=val;
+
+localStorage.setItem('orders',JSON.stringify(liveOrders));
+
+renderOrders();
+}
+
+function editOrder(id){
+
+let liveOrders=JSON.parse(localStorage.getItem('orders') || '[]');
+
+let index=liveOrders.findIndex(x=>x.id===id);
+
+let o=liveOrders[index];
+
+selectedSupplier=o.supplier;
+
+document.getElementById('selectedSupplierBox').innerHTML=`
+<b>${selectedSupplier.name}</b>
+`;
+
+cart=[...o.items];
+
+renderCart();
+
+liveOrders.splice(index,1);
+
+localStorage.setItem('orders',JSON.stringify(liveOrders));
+
+renderOrders();
+
+showSection('create');
+}
+
+function deleteOrder(id){
+
+if(confirm('Delete Order?')){
+
+let liveOrders=JSON.parse(localStorage.getItem('orders') || '[]');
+
+liveOrders=liveOrders.filter(x=>x.id!==id);
+
+localStorage.setItem('orders',JSON.stringify(liveOrders));
+
+renderOrders();
+
+}
+}
+
+function shareWhatsapp(id){
+
+let o=JSON.parse(localStorage.getItem('orders') || '[]').find(x=>x.id===id);
+
+let text='Darshana Ayurveda\\n\\n';
+
+o.items.forEach((i,n)=>{
+text += `${n+1}. ${i.medicine} - ${i.quantity}\\n`;
+});
+
+window.open(`https://wa.me/?text=${encodeURIComponent(text)}`);
+}
+
+function generatePDF(id){
+
+const {jsPDF}=window.jspdf;
+
+let o=JSON.parse(localStorage.getItem('orders') || '[]').find(x=>x.id===id);
+
+let doc=new jsPDF();
+
+let today=new Date().toLocaleDateString();
+
+doc.setFontSize(18);
+doc.text("Darshana Ayurveda",20,20);
+
+doc.setFontSize(11);
+doc.text("077-8817015",20,28);
+doc.text("No.95/4A/3, Kalapaluwawa Road,",20,36);
+doc.text("Thalangama North, Thalangama.",20,44);
+doc.text(`Date: ${today}`,150,20);
+
+doc.line(20,55,190,55);
+
+doc.text("No",20,65);
+doc.text("Medicine",50,65);
+doc.text("Quantity",150,65);
+
+let y=75;
+
+o.items.forEach((i,n)=>{
+doc.text(String(n+1),20,y);
+doc.text(i.medicine,50,y);
+doc.text(i.quantity,150,y);
+y += 10;
+});
+
+doc.save("Darshana-Ayurveda-Order.pdf");
+}
+
+renderPriceFields();
+renderQtyButtons();
+renderSuppliers();
+renderMedicines();
+renderOrders();
+
+</script>
+
+</body>
+</html>
